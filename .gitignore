@@ -1,0 +1,9 @@
+__pycache__/
+video/
+date/temp/
+date/stare.json
+date/*.lacat
+date/*.pid
+date/*.log.vechi
+date/server.log
+secrete.env

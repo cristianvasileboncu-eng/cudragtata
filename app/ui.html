@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cu drag, tata – Auto Video Farm</title>
+<style>
+  :root { --navy:#1f2a44; --gold:#e0a526; --crem:#fff6e4; --rosu:#c94b55; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui, sans-serif; background:var(--crem); color:var(--navy); }
+  header { background:var(--navy); color:#fff; padding:16px; text-align:center; }
+  header h1 { margin:0; font-size:22px; } header small { color:var(--gold); }
+  main { padding:14px; max-width:620px; margin:auto; }
+  .stare { background:#fff; border-radius:14px; padding:12px; margin-bottom:12px; font-size:15px;
+           border:2px solid #f0dcae; }
+  .bara { height:10px; background:#eee; border-radius:6px; overflow:hidden; margin-top:8px; }
+  .bara div { height:100%; width:0; background:var(--gold); transition:width .4s; }
+  select { width:100%; font-size:17px; padding:12px; border-radius:12px; border:2px solid var(--navy);
+           margin-bottom:10px; background:#fff; color:var(--navy); }
+  button { width:100%; font-size:20px; font-weight:700; padding:17px; margin:6px 0; border:none;
+           border-radius:14px; color:#fff; background:var(--navy); }
+  button.aur { background:var(--gold); color:var(--navy); }
+  button.rosu { background:var(--rosu); }
+  button:disabled { opacity:.5; }
+  #prev video, #prev img { width:100%; border-radius:14px; margin-top:10px; background:#000; }
+  .item { background:#fff; border-radius:12px; padding:10px; margin:8px 0; font-size:14px; }
+  .item b { font-size:15px; }
+  .eticheta { display:inline-block; padding:2px 8px; border-radius:8px; margin:2px; font-size:12px; color:#fff; }
+  .programat { background:#2e8b57; } .simulat { background:#888; } .eroare { background:var(--rosu); }
+  .verifica { background:#d98c1f; } .in_curs { background:#4a6fa5; }
+  pre { white-space:pre-wrap; font-size:11px; background:#1f2a44; color:#e8e8e8; padding:10px;
+        border-radius:10px; max-height:220px; overflow:auto; }
+  .ascuns { display:none; }
+</style>
+</head>
+<body>
+<header><h1>Cu drag, tata</h1><small>Auto Video Farm</small></header>
+<main>
+  <div class="stare" id="stare">Se încarcă...</div>
+
+  <select id="tip">
+    <option value="text">🎵 Video – Text + muzică (tați de departe, dor, comunitate)</option>
+    <option value="emotie">💛 Video – Emoție (dor, apropiere, timp prețios)</option>
+    <option value="reclama">🎮 Video – Reclamă jocuri cudragtata.ro</option>
+    <option value="poveste">🎬 Video – Poveste tata și copil (simplu)</option>
+    <option value="sfat">🎬 Video – Sfaturi pentru părinți</option>
+    <option value="joc">🎬 Video – Joc educativ</option>
+    <option value="poza_citat">🖼️ Poză – Gândul zilei</option>
+    <option value="poza_sfat">🖼️ Poză – Sfatul zilei</option>
+    <option value="poza_joc">🖼️ Poză – Jocul zilei</option>
+  </select>
+  <button id="bGen" class="aur" onclick="genereaza()">▶ Generează</button>
+  <button onclick="previzualizeaza()">👁 Previzualizează</button>
+  <button id="bAuto" onclick="auto()">📅 Publicare automată</button>
+  <button onclick="istoric()">📜 Istoric</button>
+  <button class="rosu" onclick="opreste()">■ Oprește</button>
+
+  <div id="prev"></div>
+  <div id="ist"></div>
+  <details><summary>Jurnal tehnic</summary><pre id="jurnal"></pre></details>
+</main>
+<script>
+let ultimaStare = null;
+async function api(url, metoda='GET') {
+  const r = await fetch(url, {method: metoda});
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.eroare || 'Eroare');
+  return j;
+}
+async function stare() {
+  try {
+    const s = await api('/api/stare'); ultimaStare = s;
+    const j = s.job;
+    let h = '';
+    h += `<b>Publicare automată:</b> ${s.automat ? '🟢 PORNITĂ' : '⚪ oprită'}`;
+    h += ` · <b>Mod:</b> ${s.real ? '🔴 REAL' : 'simulare (nu postează)'}<br>`;
+    h += `<b>Buffer:</b> ${s.buffer ? '✔' : '✘ neconfigurat'} · <b>Cloudinary:</b> ${s.cloudinary ? '✔' : '✘ neconfigurat'}<br>`;
+    if (s.lucru_automat) h += `<b>Automat:</b> ${s.lucru_automat}<br>`;
+    if (j.activ) h += `<b>Lucrez:</b> ${j.mesaj} (${j.procent}%)<div class="bara"><div style="width:${j.procent}%"></div></div>`;
+    else if (j.eroare) h += `<b style="color:#c94b55">Problemă:</b> ${j.eroare}`;
+    else if (j.mesaj) h += `✅ ${j.mesaj}`;
+    document.getElementById('stare').innerHTML = h;
+    document.getElementById('bGen').disabled = j.activ;
+    document.getElementById('bAuto').disabled = s.automat;
+    document.getElementById('jurnal').textContent = s.jurnal.join('');
+  } catch (e) {
+    document.getElementById('stare').innerHTML = '⚠️ Serverul nu răspunde. Pornește-l din Termux: <b>bash porneste.sh</b>';
+  }
+}
+async function genereaza() {
+  try { await api('/api/genereaza?tip=' + document.getElementById('tip').value, 'POST'); stare(); }
+  catch (e) { alert(e.message); }
+}
+async function previzualizeaza() {
+  const lista = await api('/api/istoric');
+  const v = lista.find(x => x.exista);
+  const p = document.getElementById('prev');
+  if (!v) { p.innerHTML = '<div class="item">Încă nu există nimic generat.</div>'; return; }
+  const url = '/media/' + encodeURIComponent(v.nume_fisier);
+  const media = v.nume_fisier.endsWith('.mp4')
+    ? `<video src="${url}" controls playsinline autoplay></video>`
+    : `<img src="${url}">`;
+  p.innerHTML = `<div class="item"><b>#${v.id} ${v.titlu}</b><br>${v.durata ? v.durata.toFixed(1)+' s · ' : ''}voce: ${v.voce || '-'}${media}</div>`;
+  p.scrollIntoView({behavior:'smooth'});
+}
+async function auto() {
+  if (!confirm('Pornesc publicarea automată?\n\nÎn modul „simulare” nu se postează nimic real – doar se generează și se notează în istoric.')) return;
+  await api('/api/auto/porneste', 'POST'); stare();
+}
+async function opreste() { await api('/api/opreste', 'POST'); stare(); }
+async function istoric() {
+  const lista = await api('/api/istoric');
+  let h = '<h3>Istoric</h3>';
+  if (!lista.length) h += '<div class="item">Gol.</div>';
+  for (const v of lista) {
+    h += `<div class="item"><b>#${v.id} ${v.titlu}</b> <small>(${v.categorie}, ${v.zi})</small><br>`;
+    if (!v.postari.length) h += '<small>nepublicat</small>';
+    for (const p of v.postari)
+      h += `<span class="eticheta ${p.status}" title="${p.mesaj || ''}">${p.platforma}: ${p.status} ${p.programat_la ? p.programat_la.slice(11) : ''}</span>`;
+    if (v.exista) h += ` <a href="/media/${encodeURIComponent(v.nume_fisier)}">deschide</a>`;
+    h += '</div>';
+  }
+  document.getElementById('ist').innerHTML = h;
+  document.getElementById('ist').scrollIntoView({behavior:'smooth'});
+}
+stare(); setInterval(stare, 2000);
+</script>
+</body>
+</html>

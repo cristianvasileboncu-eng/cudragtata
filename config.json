@@ -1,0 +1,70 @@
+{
+  "video": {
+    "latime": 1080,
+    "inaltime": 1920,
+    "fps": 30,
+    "preset": "veryfast",
+    "durata_min": 20,
+    "durata_max": 40,
+    "muzica": true,
+    "volum_muzica": 0.1,
+    "volum_muzica_fara_voce": 0.9
+  },
+  "voce": {
+    "motor": "auto",
+    "voce_edge": "ro-RO-EmilNeural",
+    "viteza": "+0%",
+    "voci_pe_categorie": {
+      "poveste": "ro-RO-EmilNeural",
+      "sfat": "ro-RO-EmilNeural",
+      "joc": "ro-RO-AlinaNeural"
+    }
+  },
+  "zilnic": {
+    "categorii": [
+      "text",
+      "text",
+      "text"
+    ],
+    "ore_publicare": [
+      "10:00",
+      "15:00",
+      "20:00"
+    ],
+    "poze": [
+      "poza_citat",
+      "poza_sfat",
+      "poza_joc"
+    ],
+    "ore_poze": [
+      "08:30",
+      "12:30",
+      "18:00"
+    ],
+    "ora_generare": "00:00"
+  },
+  "publicare": {
+    "publicare_reala": true,
+    "limite_pe_zi": {
+      "tiktok": 6,
+      "instagram": 6,
+      "youtube": 2
+    },
+    "youtube": {
+      "categorie": "22",
+      "confidentialitate": "public",
+      "pentru_copii_categorii": [
+        "joc"
+      ]
+    },
+    "marcheaza_ai": true,
+    "sterge_din_cloudinary_dupa_zile": 3
+  },
+  "pastreaza_video_local_zile": 14,
+  "copie_in_galerie": "",
+  "port": 8765,
+  "poze": {
+    "ca_video_cu_muzica": false
+  },
+  "site": "cudragtata.ro"
+}

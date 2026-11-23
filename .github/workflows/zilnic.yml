@@ -1,0 +1,72 @@
+name: Publicare zilnică Cu drag, tata
+
+on:
+  schedule:
+    # ore UTC: 04:15 (= 05:15 în Spania) + o rezervă la 06:15, în caz că prima întârzie
+    - cron: "15 4 * * *"
+    - cron: "15 6 * * *"
+  workflow_dispatch: {}   # buton „Run workflow” pentru pornire manuală
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publicare-zilnica
+  cancel-in-progress: false
+
+jobs:
+  publica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TZ: Europe/Madrid
+      BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalez FFmpeg și Pillow
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          pip install -q pillow
+
+      - name: Verific cheile și muzica
+        run: |
+          for k in BUFFER_API_KEY CLOUDINARY_CLOUD_NAME CLOUDINARY_API_KEY CLOUDINARY_API_SECRET; do
+            if [ -z "${!k}" ]; then echo "::error::Lipsește secretul $k (Settings → Secrets and variables → Actions)"; exit 1; fi
+          done
+          n=$(ls assets/muzica/*.mp3 2>/dev/null | wc -l)
+          if [ "$n" -eq 0 ]; then echo "::error::Nu există muzică în assets/muzica (încarcă fișiere .mp3)"; exit 1; fi
+          echo "Melodii: $n"
+
+      - name: Descarc imaginile de pe cudragtata.ro
+        run: |
+          mkdir -p assets/fundaluri
+          for n in familia-in-aventura joc-garaj eroii-pe-pajiste cat-familie cat-masinute cat-educative cat-ghicit joc-usi; do
+            if [ ! -f "assets/fundaluri/$n.jpg" ]; then
+              curl -fsSL -m 60 -o "/tmp/$n.webp" "https://cudragtata.ro/imagini/$n.webp" \
+                && ffmpeg -nostdin -y -v error -i "/tmp/$n.webp" -q:v 2 "assets/fundaluri/$n.jpg" \
+                && echo "ok $n" || echo "lipsește $n"
+            fi
+          done
+
+      - name: Generez și programez postările zilei
+        run: python -m app.cli zi
+
+      - name: Salvez istoricul (anti-dubluri)
+        if: always()
+        run: |
+          git config user.name "cudragtata-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add date/istoric.db date/jurnal.log date/canale.json 2>/dev/null || true
+          if git diff --cached --quiet; then echo "Nimic nou."; exit 0; fi
+          git commit -m "Istoric $(date +%F) [skip ci]"
+          git pull --rebase -q || true
+          git push
