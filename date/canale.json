@@ -1,0 +1,23 @@
+[
+ {
+  "id": "6b0372028541f09ecb6b9471",
+  "name": "Cu Drag,TaTa",
+  "displayName": "Cu Drag,TaTa",
+  "service": "youtube",
+  "isQueuePaused": false
+ },
+ {
+  "id": "6b03715f8541f09ecb6b9046",
+  "name": "cu_drag_tata",
+  "displayName": "cu_drag_tata",
+  "service": "tiktok",
+  "isQueuePaused": false
+ },
+ {
+  "id": "6b0370c88541f09ecb6b8c52",
+  "name": "cu_drag_tata",
+  "displayName": "cu_drag_tata",
+  "service": "instagram",
+  "isQueuePaused": false
+ }
+]
