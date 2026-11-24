@@ -27,9 +27,10 @@ FOCUS = [(0.5, 0.45), (0.3, 0.5), (0.7, 0.5), (0.5, 0.6), (0.4, 0.35), (0.6, 0.4
 
 def imagine_fundal(cheie, rng):
     d = os.path.join(ASSETS, "fundaluri")
-    fis = sorted(glob.glob(os.path.join(d, f"{cheie}.*")))
-    if not fis:
-        fis = sorted(f for f in glob.glob(os.path.join(d, "*")) if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp")))
+    toate = sorted(f for f in glob.glob(os.path.join(d, "*")) if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp")))
+    potrivite = sorted(glob.glob(os.path.join(d, f"{cheie}.*")))
+    # imaginile tale noi (orice nume) intră în rotație alături de cele de pe site
+    fis = toate if (len(toate) > len(potrivite) and rng.random() < 0.5) else (potrivite or toate)
     return rng.choice(fis) if fis else None
 
 
