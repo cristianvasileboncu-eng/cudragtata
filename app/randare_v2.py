@@ -258,6 +258,10 @@ class RandareV2(Randare):
         brut = os.path.join(lucru, "brut.mp4")
         self._ffmpeg(["-f", "concat", "-safe", "0", "-i", lista, "-c", "copy", brut])
         muzica = sorted(glob.glob(os.path.join(ASSETS, "muzica", "*.mp3")))
+        if getattr(self, "fara_voce", False):
+            # texte emoționale → piese calme; cele vesele rămân pentru jocuri
+            calme = [m for m in muzica if not any(k in os.path.basename(m) for k in ("vesel", "joc"))]
+            muzica = calme or muzica
         tmp_out = iesire + ".tmp.mp4"
         if getattr(self, "fara_voce", False) and not muzica:
             log("Nu ai muzică în assets/muzica – video-ul text va fi fără sunet!", "WARN")
