@@ -25,12 +25,19 @@ NUME_VORBITOR = {"tata": "TATA", "copil": "COPILUL"}
 FOCUS = [(0.5, 0.45), (0.3, 0.5), (0.7, 0.5), (0.5, 0.6), (0.4, 0.35), (0.6, 0.4)]
 
 
+SITE = {"familia-in-aventura", "joc-garaj", "eroii-pe-pajiste", "cat-familie", "cat-masinute",
+        "cat-educative", "cat-ghicit", "joc-usi"}
+
+
 def imagine_fundal(cheie, rng):
     d = os.path.join(ASSETS, "fundaluri")
     toate = sorted(f for f in glob.glob(os.path.join(d, "*")) if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp")))
+    proprii = [f for f in toate if os.path.splitext(os.path.basename(f))[0] not in SITE]
     potrivite = sorted(glob.glob(os.path.join(d, f"{cheie}.*")))
-    # imaginile tale noi (orice nume) intră în rotație alături de cele de pe site
-    fis = toate if (len(toate) > len(potrivite) and rng.random() < 0.5) else (potrivite or toate)
+    # imaginile tale (cu eroii) au prioritate; cele de pe site apar mai rar
+    if proprii and rng.random() < 0.8:
+        return rng.choice(proprii)
+    fis = potrivite or toate
     return rng.choice(fis) if fis else None
 
 
@@ -56,8 +63,22 @@ class RandareV2(Randare):
 
     def pregateste_fundal(self, sursa, cale, rng, intunecat=False):
         W, H = int(self.W * self.SCALA), int(self.H * self.SCALA)
+        self.vertical = False
         if sursa:
             im = Image.open(sursa).convert("RGB")
+            if im.height / im.width > 1.5:
+                # imagine verticală (ex. din ChatGPT): pe tot ecranul, cu logo-ul ei
+                self.vertical = True
+                from PIL import ImageStat
+                zona = im.convert("L").crop((0, int(im.height * 0.2), im.width, int(im.height * 0.48)))
+                self.text_jos = ImageStat.Stat(zona).stddev[0] > 52   # personaje sus → textul jos
+                r = max(W / im.width, H / im.height)
+                im = im.resize((int(im.width * r) + 1, int(im.height * r) + 1))
+                im = im.crop(((im.width - W) // 2, (im.height - H) // 2, (im.width - W) // 2 + W, (im.height - H) // 2 + H))
+                if intunecat:
+                    im = Image.blend(im.filter(ImageFilter.GaussianBlur(12)), Image.new("RGB", im.size, (12, 18, 32)), 0.55)
+                im.save(cale, quality=90)
+                return
         else:   # fără imagini de pe site: degrade cu personajele provizorii
             tmp = cale + ".tmp.png"
             self.fundal(rng.choice(PALETE), rng, tmp)
@@ -121,10 +142,13 @@ class RandareV2(Randare):
                 y += 70
             im.save(cale)
             return
+        if getattr(self, "vertical", False):
+            lw = 0
         # logo mic sus
-        lw = 380
-        lg = self.logo.resize((lw, int(self.logo.height * lw / self.logo.width)))
-        im.alpha_composite(lg, ((W - lw) // 2, 140))
+        lw = lw if getattr(self, "vertical", False) else 380
+        if lw:
+            lg = self.logo.resize((lw, int(self.logo.height * lw / self.logo.width)))
+            im.alpha_composite(lg, ((W - lw) // 2, 140))
         # hook mare (prima replică)
         if scena.get("hook"):
             fh = font(92)
@@ -161,7 +185,11 @@ class RandareV2(Randare):
         f = font(marime)
         linii = rupe(text, f, 940)
         h = marime * 1.25
-        y = (1080 if not hook else 960) - len(linii) * h / 2
+        sus = getattr(self, "vertical", False)
+        if sus and getattr(self, "text_jos", False):
+            y = 1560 - len(linii) * h / 2
+        else:
+            y = ((760 if sus else 1080) if not hook else (700 if sus else 960)) - len(linii) * h / 2
         for l in linii:
             d.text(((self.W - f.getlength(l)) / 2, y), l, font=f, fill=GALBEN if hook else ALB,
                    stroke_width=10 if hook else 8, stroke_fill=(0, 0, 0))
@@ -266,6 +294,8 @@ class RandareV2(Randare):
                 imagine_fundal(viz.get("imagine", ""), rng)
             self.pregateste_fundal(sursa, bg, rng, intunecat=final)
             fx, fy = FOCUS[viz.get("focus", i) % len(FOCUS)]
+            if getattr(self, "vertical", False):
+                fx, fy = 0.5, 0.5
             n = max(1, int(D * fps))
             # zoom de impact în primele 0,3 s + apropiere lentă
             z = f"1.04+0.10*max(0,1-on/9)+{0.06 / n:.6f}*on"

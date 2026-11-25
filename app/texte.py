@@ -41,7 +41,7 @@ INVITATII = [
 def legenda(categorie, titlu, descriere, site="cudragtata.ro", seed=None, extra=""):
     rng = random.Random(seed)
     baza = categorie.replace("poza_", "")
-    baza = {"text": "emotie", "citat": "poveste", "ghicitoare": "joc", "numarat": "joc"}.get(baza, baza)
+    baza = {"text": "emotie", "poster": "reclama", "citat": "poveste", "ghicitoare": "joc", "numarat": "joc"}.get(baza, baza)
     desch = rng.choice(DESCHIDERI.get(baza, DESCHIDERI["poveste"]))
     inv = rng.choice(INVITATII).format(site=site)
     from .continut_v2 import HASHTAGURI_V2

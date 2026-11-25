@@ -129,8 +129,43 @@ def deseneaza(date, cale, rng):
     im.convert("RGB").save(cale, quality=92)
 
 
+def _poster_nou():
+    d = os.path.join(ASSETS, "postere")
+    for f in sorted(glob.glob(os.path.join(d, "*"))):
+        if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+            fp = _fp("poster", os.path.basename(f))
+            if not baza.exista_fp(fp):
+                return f, fp
+    return None, None
+
+
+def poster_4x5(src, cale):
+    """Posterul întreg, pe format 4:5 (cerut de Instagram), cu margini estompate."""
+    im = Image.open(src).convert("RGB")
+    fundal = im.resize((W, int(im.height * W / im.width))).crop((0, 0, W, H))
+    fundal = fundal.resize((W, H)).filter(ImageFilter.GaussianBlur(25))
+    r = H / im.height
+    fg = im.resize((int(im.width * r), H))
+    fundal.paste(fg, ((W - fg.width) // 2, 0))
+    fundal.save(cale, quality=92)
+
+
 def genereaza_poza(categorie, slot=None, zi=None):
     zi = zi or baza.azi()
+    if categorie == "poza_poster":
+        src, fp = _poster_nou()
+        if src:
+            nume = f"{zi}_{'s%d' % slot if slot is not None else 'manual'}_poster_{fp}.jpg"
+            cale = os.path.join(VIDEO, nume)
+            poster_4x5(src, cale)
+            sc = {"categorie": "poza_poster", "tema": "poster", "fingerprint": fp,
+                  "componente": [f"poster:{os.path.basename(src)}"], "titlu": "Cu drag, tata",
+                  "descriere": "Jocuri, povești și activități pentru tați și copii, chiar și la distanță."}
+            vid = baza.adauga_video(sc, cale, 0, "", slot, zi)
+            log(f"Poster #{vid} gata: {os.path.basename(src)}")
+            return vid
+        log("Toate posterele au fost folosite – fac „Gândul zilei”.", "WARN")
+        categorie = "poza_citat"
     rng = random.Random()
     for _ in range(300):
         fp, date = _alege(categorie, rng)
